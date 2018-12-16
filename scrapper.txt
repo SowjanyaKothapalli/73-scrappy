@@ -1,0 +1,61 @@
+                          #####################Recommender systems#########################
+
+#import all the required libraries
+
+
+import sqlite3
+import pandas as pd
+import smtplib
+from requests import get
+from bs4 import BeautifulSoup
+
+
+connection = sqlite3.connect("Reviewer.db")
+cursor = connection.cursor()
+#cursor.execute("""DROP TABLE user;""")----only for testing----
+
+cursor.execute("create table user (email_id,tv_series_name )")
+number_of_users = int(input("Enter number of users"))
+print("Enter user email_id names:")
+emailId = [input() for i in range(number_of_users)]
+print("Enter the T.V. series name respectively:")
+tv_Series = [input() for i in range(number_of_users)]
+n = len(emailId)
+for i in range(n):
+    cursor.execute("insert into user values (?, ?)", (emailId[i], tv_Series[i]))
+	
+connection.close()
+df = pd.read_sql_query("select * from user;", connection)
+#print(df)
+
+
+for j in range(number_of_users):
+    s = df.iloc[j]
+    email = s['email_id']
+    tvseries = s['tv_series_name']
+    #print(email)------for testing----
+    #print(tvseries)----for testing-----
+    tvseries = tvseries.lower()
+	#find the tv series which matches it's link in another dataframe which is just 2 columns of tv series and their imdb links#
+     
+    url = 'https://www.imdb.com/title/tt0944947/'
+    response = get(url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    series_rate = soup.find('span', itemprop='ratingValue').text
+    # print(series_rate)
+    summary = soup.find('div', class_='summary_text').text
+    Summary = summary.strip()
+	
+	####now after extracting ,send the message#######
+	
+    message = f"T.V. Series Name : {tvseries}/n  Rating : {series_rate} /n  Summary : {Summary}"
+    server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+    server.login("your- email- id", "your password")
+    server.sendmail(
+        "from address",
+        email,
+        message)
+    server.quit()
+
+
+						  
